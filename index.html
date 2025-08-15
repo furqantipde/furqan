@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<!--
+  Professional Portfolio – Mobile‑first, Parallax, Fade‑ins, Dark Mode
+  Single file: HTML + Tailwind v3 (CDN) + Vanilla JS
+  Features
+  - Mobile‑first layout with responsive grid and typography
+  - Day/Night toggle (persists; respects system preference)
+  - Subtle fade‑in on scroll via IntersectionObserver
+  - Parallax hero layers (GPU‑accelerated transforms)
+  - Sticky/blur navbar with hover micro‑interactions
+  - Projects with image fallbacks (inline SVG placeholders)
+  - Pricing (Simple / Advance / Pro) with hover lift + PayPal Buy‑Now links
+  - YouTube tiny logo (inline SVG) that opens channel in new tab
+  - Contact form: sends to Gmail via `mailto:` (client opens email app) + validation
+  - Scroll‑to‑top button
+  - Accessible focus states & landmarks
+
+  Replace the obvious placeholders (Your Name, links, images) to customize.
+-->
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Professional Portfolio – Your Name</title>
+
+  <!-- Tailwind v3 CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: { sans: [ 'Inter', 'system-ui', 'Segoe UI', 'Roboto', 'Ubuntu', 'sans-serif' ] },
+          boxShadow: {
+            soft: '0 12px 40px rgba(0,0,0,.10)',
+            lift: '0 8px 24px rgba(0,0,0,.12)'
+          },
+          colors: {
+            brand: {
+              light: '#eef2ff',   // indigo-50-ish
+              dark: '#0b0d12',    // deep slate for dark surfaces
+            }
+          }
+        }
+      }
+    }
+  </script>
+
+  <style>
+    html { scroll-behavior: smooth; }
+
+    /* Fade-in animation utility; classes are added when elements enter the viewport */
+    .reveal { opacity: 0; transform: translateY(14px); will-change: transform, opacity; }
+    .revealed { opacity: 1; transform: translateY(0); transition: opacity .6s ease, transform .6s ease; }
+
+    /* Parallax utilities: we transform on scroll for layered depth */
+    .parallax-wrap { position: relative; overflow: hidden; }
+    .parallax-layer { position: absolute; inset: 0; will-change: transform; }
+
+    /* Scroll-to-top fixed placement */
+    #scrollTopBtn { position: fixed; bottom: 18px; right: 18px; display: none; }
+
+    /* nicer focus outline */
+    :focus-visible { outline: 2px dashed #6366f1; outline-offset: 3px; }
+  </style>
+</head>
+
+<body class="font-sans antialiased bg-white text-slate-900 dark:bg-black dark:text-white transition-colors duration-300">
+  <!-- ========================================= -->
+  <!-- NAVBAR                                     -->
+  <!-- ========================================= -->
+  <header class="sticky top-0 z-50 backdrop-blur supports-[backdrop-filter]:bg-white/70 supports-[backdrop-filter]:dark:bg-black/30 border-b border-black/5 dark:border-white/10">
+    <nav class="max-w-6xl mx-auto px-4">
+      <div class="h-14 flex items-center justify-between">
+        <a href="#home" class="font-semibold tracking-tight hover:opacity-80 transition">Portfolio</a>
+
+        <!-- Desktop -->
+        <div class="hidden md:flex items-center gap-5">
+          <a href="#home" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">Home</a>
+          <a href="#about" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">About</a>
+          <a href="#projects" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">Projects</a>
+          <a href="#pricing" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">Pricing</a>
+          <a href="#contact" class="hover:text-indigo-600 dark:hover:text-indigo-400 transition">Contact</a>
+
+          <!-- YouTube tiny logo -->
+          <a href="https://www.youtube.com/@Furqantipde" target="_blank" rel="noopener" class="inline-flex items-center" title="YouTube">
+            <svg width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" class="hover:opacity-80 transition">
+              <path fill="currentColor" d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.8 3 12 3 12 3s-6.8 0-8.7.4A4 4 0 0 0 .5 6.2 41.7 41.7 0 0 0 0 12a41.7 41.7 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.2 21 12 21 12 21s6.8 0 8.7-.4a4 4 0 0 0 2.8-2.8A41.7 41.7 0 0 0 24 12a41.7 41.7 0 0 0-.5-5.8zM9.6 15.5v-7L16 12l-6.4 3.5z"/>
+            </svg>
+          </a>
+
+          <!-- Theme toggle -->
+          <button id="toggle-theme" class="rounded-2xl border border-black/10 dark:border-white/10 p-1.5 hover:shadow-soft" aria-label="Toggle theme">
+            <span id="themeIcon" aria-hidden="true">🌙</span>
+          </button>
+        </div>
+
+        <!-- Mobile -->
+        <button id="menuBtn" class="md:hidden" aria-label="Open menu">☰</button>
+      </div>
+
+      <!-- Mobile menu panel -->
+      <div id="mobileMenu" class="md:hidden hidden pb-3">
+        <div class="grid gap-2">
+          <a class="px-2 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10" href="#home">Home</a>
+          <a class="px-2 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10" href="#about">About</a>
+          <a class="px-2 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10" href="#projects">Projects</a>
+          <a class="px-2 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10" href="#pricing">Pricing</a>
+          <a class="px-2 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10" href="#contact">Contact</a>
+          <a class="px-2 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 inline-flex items-center gap-2" href="https://www.youtube.com/@Furqantipde" target="_blank" rel="noopener">
+            <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.8 3 12 3 12 3s-6.8 0-8.7.4A4 4 0 0 0 .5 6.2 41.7 41.7 0 0 0 0 12a41.7 41.7 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.2 21 12 21 12 21s6.8 0 8.7-.4a4 4 0 0 0 2.8-2.8A41.7 41.7 0 0 0 24 12a41.7 41.7 0 0 0-.5-5.8zM9.6 15.5v-7L16 12l-6.4 3.5z"/></svg>
+            YouTube
+          </a>
+          <button id="toggle-theme-m" class="px-2 py-2 rounded-xl hover:bg-black/5 dark:hover:bg-white/10 text-left">🌙 / ☀️ Toggle</button>
+        </div>
+      </div>
+    </nav>
+  </header>
+
+  <!-- Spacer below sticky header on mobile -->
+  <div class="h-0 md:h-0"></div>
+
+  <!-- ========================================= -->
+  <!-- HERO with Parallax                         -->
+  <!-- ========================================= -->
+  <section id="home" class="parallax-wrap relative min-h-[68vh] md:min-h-[76vh] flex items-center">
+    <!-- Parallax background layers -->
+    <div class="parallax-layer -z-10" id="plx-bg">
+      <div class="absolute inset-0 bg-gradient-to-b from-indigo-100/70 to-transparent dark:from-indigo-900/20"></div>
+      <div class="absolute -top-40 -left-32 w-[420px] h-[420px] rounded-full bg-indigo-200/60 blur-3xl opacity-60 dark:bg-indigo-600/30"></div>
+      <div class="absolute -bottom-48 -right-32 w-[460px] h-[460px] rounded-full bg-fuchsia-200/60 blur-3xl opacity-60 dark:bg-fuchsia-600/30"></div>
+    </div>
+
+    <div class="max-w-6xl mx-auto px-4 grid md:grid-cols-[auto,1fr] gap-6 md:gap-10 items-center w-full">
+      <div class="relative w-28 h-28 sm:w-32 sm:h-32 md:w-40 md:h-40 rounded-full overflow-hidden ring-4 ring-white/70 dark:ring-white/10 shadow-soft reveal">
+        <img src="me.jpg" alt="Profile photo" class="w-full h-full object-cover" onerror="this.src=placeholderSVG('Your Photo');">
+      </div>
+      <div>
+        <h1 class="reveal text-3xl sm:text-4xl md:text-5xl font-extrabold tracking-tight">Hi, I’m <span class="text-indigo-600 dark:text-indigo-400">Furqan</span></h1>
+        <p class="reveal mt-3 max-w-prose text-base sm:text-lg text-slate-700 dark:text-slate-300">I craft fast, accessible, mobile‑first websites and full‑stack web apps that feel great to use.</p>
+        <p class="reveal mt-1 text-sm sm:text-base text-slate-600 dark:text-slate-400">Currently: <span id="typing" class="border-r pr-1">Full‑Stack Web Developer</span></p>
+        <div class="reveal mt-6 flex flex-wrap gap-3">
+          <a href="#projects" class="inline-flex items-center gap-2 rounded-2xl bg-indigo-600 px-4 py-2 text-white shadow-soft hover:shadow-lift transition">View Projects →</a>
+          <a href="#contact" class="inline-flex items-center gap-2 rounded-2xl border border-black/10 dark:border-white/10 px-4 py-2 hover:bg-black/5 dark:hover:bg-white/10 transition">Hire Me</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================= -->
+  <!-- ABOUT                                      -->
+  <!-- ========================================= -->
+  <section id="about" class="py-12 md:py-16">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="reveal rounded-3xl border border-black/10 dark:border-white/10 p-6 md:p-8 bg-white/70 dark:bg-white/5">
+        <h2 class="text-xl md:text-2xl font-bold">About Us</h2>
+        <p class="mt-3 text-slate-700 dark:text-slate-300 max-w-3xl">We design and build mobile‑first websites, landing pages, and full‑stack apps. Clean UI, fast load times, SEO, and smooth micro‑interactions are our priorities. Stack: React, Next.js, Node/Express, Tailwind, and modern tooling.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================= -->
+  <!-- PROJECTS                                   -->
+  <!-- ========================================= -->
+  <section id="projects" class="py-12 md:py-16">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-xl md:text-2xl font-bold">Projects</h2>
+        <a href="#contact" class="text-sm text-indigo-600 dark:text-indigo-400 hover:underline">Start a project</a>
+      </div>
+
+      <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Card 1: Ludo -->
+        <article class="reveal rounded-3xl overflow-hidden border border-black/10 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:shadow-lift transition">
+          <div class="aspect-[16/10]">
+            <img src="ludo.jpg" alt="Ludo Game" class="w-full h-full object-cover" onerror="this.src=placeholderSVG('Ludo Game');">
+          </div>
+          <div class="p-4">
+            <h3 class="font-semibold text-lg">Ludo Game (Web)</h3>
+            <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">Multiplayer Ludo with Socket.io and Canvas; rooms, turns, animations.</p>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+              <span class="rounded-xl px-2 py-1 border border-black/10 dark:border-white/10">Node</span>
+              <span class="rounded-xl px-2 py-1 border border-black/10 dark:border-white/10">Socket.io</span>
+              <span class="rounded-xl px-2 py-1 border border-black/10 dark:border-white/10">Canvas</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 2: Portfolio -->
+        <article class="reveal rounded-3xl overflow-hidden border border-black/10 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:shadow-lift transition">
+          <div class="aspect-[16/10]">
+            <img src="portfolio.jpg" alt="Portfolio Website" class="w-full h-full object-cover" onerror="this.src=placeholderSVG('Portfolio Website');">
+          </div>
+          <div class="p-4">
+            <h3 class="font-semibold text-lg">Portfolio Website</h3>
+            <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">Mobile‑first portfolio with parallax, dark mode, and subtle a11y‑friendly motion.</p>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+              <span class="rounded-xl px-2 py-1 border">HTML</span>
+              <span class="rounded-xl px-2 py-1 border">Tailwind</span>
+              <span class="rounded-xl px-2 py-1 border">JavaScript</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- Card 3: Dashboard -->
+        <article class="reveal rounded-3xl overflow-hidden border border-black/10 dark:border-white/10 bg-white/70 dark:bg-white/5 hover:shadow-lift transition">
+          <div class="aspect-[16/10]">
+            <img src="dashboard.jpg" alt="Analytics Dashboard" class="w-full h-full object-cover" onerror="this.src=placeholderSVG('Analytics Dashboard');">
+          </div>
+          <div class="p-4">
+            <h3 class="font-semibold text-lg">Analytics Dashboard</h3>
+            <p class="mt-1 text-sm text-slate-700 dark:text-slate-300">Data‑rich dashboard with charts, keyboard shortcuts, and API hooks.</p>
+            <div class="mt-3 flex flex-wrap gap-2 text-xs">
+              <span class="rounded-xl px-2 py-1 border">Next.js</span>
+              <span class="rounded-xl px-2 py-1 border">REST</span>
+              <span class="rounded-xl px-2 py-1 border">A11y</span>
+            </div>
+          </div>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================= -->
+  <!-- PRICING + PAYMENT (PayPal)                 -->
+  <!-- ========================================= -->
+  <section id="pricing" class="py-12 md:py-16">
+    <div class="max-w-6xl mx-auto px-4">
+      <h2 class="text-xl md:text-2xl font-bold mb-6">Website Pricing</h2>
+
+      <div class="grid md:grid-cols-3 gap-6">
+        <!-- Simple -->
+        <div class="reveal rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 shadow-soft hover:shadow-lift transition">
+          <div class="aspect-[16/9] mb-4">
+            <img src="pricing-simple.jpg" alt="Simple plan" class="w-full h-full object-cover rounded-2xl" onerror="this.src=placeholderSVG('Simple Plan');">
+          </div>
+          <h3 class="font-semibold text-lg">Simple</h3>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Landing page, essentials, fast turnaround</p>
+          <p class="mt-4 text-3xl font-extrabold">₨30,000</p>
+          <ul class="mt-4 space-y-2 text-sm">
+            <li>• 1–3 pages</li>
+            <li>• Mobile‑first + SEO basics</li>
+            <li>• Contact form (mailto to Gmail)</li>
+            <li>• 3‑day delivery</li>
+          </ul>
+          <!-- PayPal Buy Now (USD approx) -->
+          <a class="mt-6 inline-flex w-full justify-center rounded-2xl bg-indigo-600 text-white py-2 hover:opacity-95 transition"
+             href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=fchattha206%40gmail.com&item_name=Simple+Website&amount=109.00&currency_code=USD" target="_blank" rel="noopener">Pay with PayPal</a>
+        </div>
+
+        <!-- Advance -->
+        <div class="reveal rounded-3xl border border-indigo-300/50 dark:border-indigo-500/30 bg-indigo-50/70 dark:bg-indigo-900/20 p-6 shadow-soft hover:shadow-lift transition relative">
+          <span class="absolute -top-3 right-4 text-xs px-2 py-1 rounded-full bg-indigo-600 text-white">Popular</span>
+          <div class="aspect-[16/9] mb-4">
+            <img src="pricing-advance.jpg" alt="Advance plan" class="w-full h-full object-cover rounded-2xl" onerror="this.src=placeholderSVG('Advance Plan');">
+          </div>
+          <h3 class="font-semibold text-lg">Advance</h3>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Dynamic pages, blog/CMS, integrations</p>
+          <p class="mt-4 text-3xl font-extrabold">₨75,000</p>
+          <ul class="mt-4 space-y-2 text-sm">
+            <li>• 5–8 pages</li>
+            <li>• Blog / CMS (headless option)</li>
+            <li>• Analytics & contact integrations</li>
+            <li>• 7–10 day delivery</li>
+          </ul>
+          <a class="mt-6 inline-flex w-full justify-center rounded-2xl bg-indigo-600 text-white py-2 hover:opacity-95 transition"
+             href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=fchattha206%40gmail.com&item_name=Advance+Website&amount=269.00&currency_code=USD" target="_blank" rel="noopener">Pay with PayPal</a>
+        </div>
+
+        <!-- Pro -->
+        <div class="reveal rounded-3xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 p-6 shadow-soft hover:shadow-lift transition">
+          <div class="aspect-[16/9] mb-4">
+            <img src="pricing-pro.jpg" alt="Pro plan" class="w-full h-full object-cover rounded-2xl" onerror="this.src=placeholderSVG('Pro Plan');">
+          </div>
+          <h3 class="font-semibold text-lg">Pro</h3>
+          <p class="mt-1 text-sm text-slate-600 dark:text-slate-300">Full‑stack app, auth, dashboard</p>
+          <p class="mt-4 text-3xl font-extrabold">₨150,000</p>
+          <ul class="mt-4 space-y-2 text-sm">
+            <li>• Unlimited pages</li>
+            <li>• Custom API & Database</li>
+            <li>• Authentication / Roles</li>
+            <li>• Deployment & handover</li>
+          </ul>
+          <a class="mt-6 inline-flex w-full justify-center rounded-2xl bg-indigo-600 text-white py-2 hover:opacity-95 transition"
+             href="https://www.paypal.com/cgi-bin/webscr?cmd=_xclick&business=fchattha206%40gmail.com&item_name=Pro+Website&amount=539.00&currency_code=USD" target="_blank" rel="noopener">Pay with PayPal</a>
+        </div>
+      </div>
+
+      <p class="reveal mt-4 text-xs text-slate-500 dark:text-slate-400">Note: PayPal buttons use USD (approx PKR conversion). You can replace these with Stripe Payment Links later if you prefer.</p>
+    </div>
+  </section>
+
+  <!-- ========================================= -->
+  <!-- CONTACT (mailto to Gmail)                  -->
+  <!-- ========================================= -->
+  <section id="contact" class="py-12 md:py-16">
+    <div class="max-w-6xl mx-auto px-4">
+      <div class="reveal rounded-3xl border border-black/10 dark:border-white/10 p-6 md:p-8 bg-white/70 dark:bg-white/5">
+        <h2 class="text-xl md:text-2xl font-bold">Contact</h2>
+        <p class="mt-2 text-slate-700 dark:text-slate-300">Send a message and it will open your email app to send directly to <strong>fchattha206@gmail.com</strong>.</p>
+
+        <form id="contactForm" class="mt-4 grid gap-3 sm:grid-cols-2">
+          <input required name="name" placeholder="Your Name" class="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-400" />
+          <input required type="email" name="email" placeholder="Email" class="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-400" />
+          <input name="budget" placeholder="Budget (optional)" class="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-400" />
+          <input name="service" placeholder="Service (e.g. Simple/Advance/Pro)" class="rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-4 py-2 outline-none focus:ring-2 focus:ring-indigo-400" />
+          <textarea required name="message" placeholder="Tell me about your project" class="sm:col-span-2 rounded-2xl border border-black/10 dark:border-white/10 bg-white/80 dark:bg-white/5 px-4 py-2 h-28 outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
+          <button class="w-fit rounded-2xl bg-indigo-600 px-4 py-2 text-white shadow-soft hover:shadow-lift transition">Send Email</button>
+        </form>
+
+        <div class="mt-4 text-sm text-slate-600 dark:text-slate-400">
+          Prefer WhatsApp or another method? Add quick links here.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ========================================= -->
+  <!-- FOOTER                                     -->
+  <!-- ========================================= -->
+  <footer class="py-8 text-center text-sm text-slate-600 dark:text-slate-400">
+    © <span id="year"></span> Your Name • Built with ❤️ •
+    <a href="https://www.youtube.com/@Furqantipde" target="_blank" rel="noopener" class="inline-flex items-center gap-2 hover:opacity-80">
+      <svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M23.5 6.2a4 4 0 0 0-2.8-2.8C18.8 3 12 3 12 3s-6.8 0-8.7.4A4 4 0 0 0 .5 6.2 41.7 41.7 0 0 0 0 12a41.7 41.7 0 0 0 .5 5.8 4 4 0 0 0 2.8 2.8C5.2 21 12 21 12 21s6.8 0 8.7-.4a4 4 0 0 0 2.8-2.8A41.7 41.7 0 0 0 24 12a41.7 41.7 0 0 0-.5-5.8zM9.6 15.5v-7L16 12l-6.4 3.5z"/></svg>
+      YouTube
+    </a>
+  </footer>
+
+  <!-- Back to top button -->
+  <button id="scrollTopBtn" class="bg-indigo-600 text-white p-3 rounded-full shadow-lg" aria-label="Back to top">⬆</button>
+
+  <!-- ========================================= -->
+  <!-- SCRIPTS                                    -->
+  <!-- ========================================= -->
+  <script>
+    // -------- Utility: Inline placeholder SVG when images fail --------
+    function placeholderSVG(text){
+      const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='1280' height='720'>
+        <defs>
+          <linearGradient id='g' x1='0' x2='1' y1='0' y2='1'>
+            <stop stop-color='%23111' offset='0%'/>
+            <stop stop-color='%230b0d12' offset='50%'/>
+            <stop stop-color='%2318181b' offset='100%'/>
+          </linearGradient>
+        </defs>
+        <rect fill='url(%23g)' width='100%' height='100%'/>
+        <g font-family='system-ui,Segoe UI,Roboto,Ubuntu,sans-serif' font-size='40' fill='white' opacity='0.9'>
+          <text x='50%' y='50%' text-anchor='middle' dominant-baseline='middle'>${text}</text>
+        </g>
+      </svg>`;
+      return 'data:image/svg+xml;utf8,' + encodeURIComponent(svg);
+    }
+
+    // -------- Theme (persist + respect system) --------
+    const root = document.documentElement;
+    const themeBtn = document.getElementById('toggle-theme');
+    const themeIcon = document.getElementById('themeIcon');
+    const saved = localStorage.getItem('theme');
+    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)');
+
+    function applyTheme(mode){
+      if(mode==='dark'){ root.classList.add('dark'); themeIcon.textContent='☀️'; }
+      else { root.classList.remove('dark'); themeIcon.textContent='🌙'; }
+    }
+
+    applyTheme(saved ? saved : (prefersDark.matches ? 'dark' : 'light'));
+
+    function toggleTheme(){
+      const isDark = root.classList.toggle('dark');
+      localStorage.setItem('theme', isDark ? 'dark' : 'light');
+      themeIcon.textContent = isDark ? '☀️' : '🌙';
+    }
+
+    themeBtn.addEventListener('click', toggleTheme);
+    const themeBtnM = document.getElementById('toggle-theme-m');
+    if (themeBtnM) themeBtnM.addEventListener('click', toggleTheme);
+
+    // -------- Mobile menu --------
+    const menuBtn = document.getElementById('menuBtn');
+    const mobileMenu = document.getElementById('mobileMenu');
+    menuBtn.addEventListener('click', () => mobileMenu.classList.toggle('hidden'));
+    mobileMenu.querySelectorAll('a').forEach(a => a.addEventListener('click', () => mobileMenu.classList.add('hidden')));
+
+    // -------- Year --------
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // -------- Typing animation (roles) --------
+    const roles = [ 'Full‑Stack Web Developer', 'UI/UX Enthusiast', 'React & Node Engineer' ];
+    const el = document.getElementById('typing');
+    let r=0, c=0, del=false;
+    (function type(){
+      const text = roles[r];
+      if (el) el.textContent = text.slice(0, c);
+      if (!del && c < text.length) c++;
+      else if (del && c > 0) c--;
+      else if (!del && c === text.length) { del = true; return setTimeout(type, 1000); }
+      else if (del && c === 0) { del = false; r = (r+1) % roles.length; }
+      setTimeout(type, del ? 35 : 65);
+    })();
+
+    // -------- Fade-in on scroll (IntersectionObserver) --------
+    const io = new IntersectionObserver((entries)=>{
+      entries.forEach(e=>{ if(e.isIntersecting){ e.target.classList.add('revealed'); io.unobserve(e.target); } });
+    }, { threshold: 0.08 });
+    document.querySelectorAll('.reveal').forEach(el=>io.observe(el));
+
+    // -------- Parallax (hero background blobs) --------
+    const plx = document.getElementById('plx-bg');
+    window.addEventListener('scroll', () => {
+      const y = window.scrollY || window.pageYOffset;
+      // subtle parallax (translate slower than scroll)
+      plx.style.transform = `translateY(${y * -0.15}px)`;
+    }, { passive: true });
+
+    // -------- Scroll to top button --------
+    const scrollBtn = document.getElementById('scrollTopBtn');
+    window.addEventListener('scroll', () => {
+      scrollBtn.style.display = window.scrollY > 220 ? 'block' : 'none';
+    }, { passive: true });
+    scrollBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+
+    // -------- Contact form: send via mailto to Gmail --------
+    const contactForm = document.getElementById('contactForm');
+    contactForm.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const data = new FormData(contactForm);
+      const name = encodeURIComponent(data.get('name') || '');
+      const email = encodeURIComponent(data.get('email') || '');
+      const budget = encodeURIComponent(data.get('budget') || '');
+      const service = encodeURIComponent(data.get('service') || '');
+      const message = encodeURIComponent(data.get('message') || '');
+
+      const subject = `New inquiry from ${decodeURIComponent(name)}`;
+      const body = `Name: ${decodeURIComponent(name)}%0D%0AEmail: ${decodeURIComponent(email)}%0D%0AService: ${decodeURIComponent(service)}%0D%0ABudget: ${decodeURIComponent(budget)}%0D%0A%0D%0AMessage:%0D%0A${decodeURIComponent(message)}`;
+
+      window.location.href = `mailto:fchattha206@gmail.com?subject=${encodeURIComponent(subject)}&body=${body}`;
+    });
+  </script>
+</body>
+</html>
