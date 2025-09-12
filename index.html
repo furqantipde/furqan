@@ -1,146 +1,86 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<title>Currency + Compiler — Made by Furqan</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2-Player Tic-Tac-Toe — Furqan</title>
 <style>
-:root{--bg:#0b1220;--card:#0f1724;--muted:#9aa4b2;--accent:#7c3aed;--text:#e6eef6}
-[data-theme="light"]{--bg:#f6f8fb;--card:#fff;--muted:#5b6b78;--accent:#4f46e5;--text:#071126}
-body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text)}
-.container{max-width:1100px;margin:20px auto;padding:16px}
-header{display:flex;justify-content:space-between;align-items:center}
-h1{margin:0;font-size:20px}
-button{background:var(--accent);border:0;padding:6px 10px;border-radius:8px;color:white;cursor:pointer}
-select,input,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc}
-.card{background:var(--card);padding:14px;border-radius:12px;margin-bottom:20px}
-.row{display:flex;gap:6px}
-.output{background:#000;color:#0f0;padding:8px;font-family:monospace;height:120px;overflow:auto;border-radius:6px}
-.flag{font-size:18px;margin-right:4px}
-.small{font-size:12px;color:var(--muted)}
-footer{text-align:center;font-size:12px;color:var(--muted);margin-top:20px}
-.link-btn{background:transparent;border:1px solid var(--muted);color:var(--text)}
-#privacyModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
-#privacyModal .box{background:var(--card);padding:20px;border-radius:12px;max-width:600px}
+  :root{--bg:#0b1220;--card:#0f1724;--accent:#7c3aed;--text:#e6eef6}
+  [data-theme="light"]{--bg:#f6f8fb;--card:#fff;--accent:#4f46e5;--text:#071126}
+  body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;}
+  h1{margin:10px;font-size:24px}
+  .board{display:grid;grid-template-columns:repeat(3,100px);grid-gap:5px;margin:20px}
+  .cell{width:100px;height:100px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:48px;cursor:pointer;border-radius:10px;transition:0.2s}
+  .cell:hover{background:var(--accent)}
+  .info{margin-top:10px;font-size:18px}
+  button{padding:6px 12px;margin-top:10px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;}
 </style>
 </head>
 <body data-theme="dark">
-<div class="container">
-<header>
-<h1>Currency Converter + Compiler</h1>
-<div>
-<button id="themeBtn">Toggle Theme</button>
-<button id="privacyBtn" class="link-btn">Privacy</button>
-</div>
-</header>
+<h1>2-Player Tic-Tac-Toe</h1>
+<div class="board" id="board"></div>
+<div class="info" id="info">Player X's turn</div>
+<button id="resetBtn">Reset Game</button>
 
-<!-- Currency Converter -->
-<div class="card">
-<h3>Currency Converter</h3>
-<div class="row">
-<input id="amount" type="number" value="1" min="0"/>
-<select id="from"></select>
-<button id="swapBtn" class="link-btn">↔</button>
-<select id="to"></select>
-</div>
-<div style="margin-top:8px" class="row">
-<button id="convertBtn">Convert</button>
-<button id="csvBtn" class="link-btn">Export CSV</button>
-<button id="copyBtn" class="link-btn">Copy</button>
-</div>
-<div class="small" id="rateInfo">Using exchangerate.host</div>
-<div id="result" style="margin-top:10px;font-weight:700">—</div>
-</div>
-
-<!-- Compiler -->
-<div class="card">
-<h3>Online Compiler</h3>
-<label>Language</label>
-<select id="langSelect"></select>
-<label style="margin-top:6px">Code</label>
-<textarea id="code" rows="8">#include &lt;stdio.h&gt;\nint main(){printf("Hello, world!\\n");return 0;}</textarea>
-<label style="margin-top:6px">Input</label>
-<input id="stdin" placeholder="Optional stdin"/>
-<div class="row" style="margin-top:8px">
-<button id="runBtn">Run</button>
-<button id="copyCodeBtn" class="link-btn">Copy Code</button>
-</div>
-<div class="output" id="output">Output here…</div>
-<div class="small">⚠️ Uses public Judge0 API with CORS proxy</div>
-</div>
-
-<footer>© Made by Furqan — Simple tools with ❤️</footer>
-</div>
-
-<!-- Privacy modal -->
-<div id="privacyModal">
-<div class="box">
-<h3>Privacy Policy</h3>
-<p>This site does not store your data. Currency rates are fetched from exchangerate.host. Code is sent to public Judge0 API via CORS proxy for execution.</p>
-<p>Made by Furqan</p>
-<button id="closePrivacy">Close</button>
-</div>
-</div>
+<audio id="clickSound" src="https://freesound.org/data/previews/341/341695_3248244-lq.mp3"></audio>
+<audio id="winSound" src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3"></audio>
 
 <script>
-const body=document.body;
-document.getElementById('themeBtn').onclick=()=>{
-  const t=body.getAttribute('data-theme')==='dark'?'light':'dark';
-  body.setAttribute('data-theme',t);localStorage.setItem('theme',t);
-};
-if(localStorage.getItem('theme')) body.setAttribute('data-theme',localStorage.getItem('theme'));
+const boardEl = document.getElementById('board');
+const infoEl = document.getElementById('info');
+const clickSound = document.getElementById('clickSound');
+const winSound = document.getElementById('winSound');
+let board = ["","","","","","","","",""];
+let currentPlayer = "X";
+let gameOver = false;
 
-// Currency converter
-const CURRENCIES=[
-{code:'USD',flag:'🇺🇸'},{code:'EUR',flag:'🇪🇺'},{code:'GBP',flag:'🇬🇧'},{code:'JPY',flag:'🇯🇵'},
-{code:'AUD',flag:'🇦🇺'},{code:'CAD',flag:'🇨🇦'},{code:'CHF',flag:'🇨🇭'},{code:'CNY',flag:'🇨🇳'},
-{code:'INR',flag:'🇮🇳'},{code:'PKR',flag:'🇵🇰'},{code:'BRL',flag:'🇧🇷'}
+const winningCombos=[
+  [0,1,2],[3,4,5],[6,7,8],
+  [0,3,6],[1,4,7],[2,5,8],
+  [0,4,8],[2,4,6]
 ];
-const fromSel=document.getElementById('from'),toSel=document.getElementById('to');
-CURRENCIES.forEach(c=>{fromSel.add(new Option(`${c.flag} ${c.code}`,c.code));toSel.add(new Option(`${c.flag} ${c.code}`,c.code));});
-fromSel.value='USD';toSel.value='PKR';
 
-async function convert(){
-  const from=fromSel.value,to=toSel.value,amt=document.getElementById('amount').value;
-  document.getElementById('result').textContent='Converting…';
-  try{
-    const r=await fetch(`https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amt}`);
-    const d=await r.json();
-    document.getElementById('rateInfo').textContent=`1 ${from} = ${d.info.rate} ${to}`;
-    document.getElementById('result').textContent=`${amt} ${from} ≈ ${d.result} ${to}`;
-  }catch(e){document.getElementById('result').textContent='Error';}
+function createBoard(){
+  boardEl.innerHTML="";
+  board.forEach((cell,i)=>{
+    const div=document.createElement('div');
+    div.classList.add('cell');
+    div.textContent=cell;
+    div.addEventListener('click',()=>handleClick(i));
+    boardEl.appendChild(div);
+  });
 }
-document.getElementById('convertBtn').onclick=convert;
-document.getElementById('swapBtn').onclick=()=>{[fromSel.value,toSel.value]=[toSel.value,fromSel.value];convert();};
-document.getElementById('csvBtn').onclick=()=>{
-  const csv=`Amount,From,To,Result\n${document.getElementById('amount').value},${fromSel.value},${toSel.value},${document.getElementById('result').textContent}`;
-  const blob=new Blob([csv],{type:'text/csv'});const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='conversion.csv';a.click();
-};
-document.getElementById('copyBtn').onclick=()=>navigator.clipboard.writeText(document.getElementById('result').textContent);
-convert();
-
-// Compiler
-const LANGS=[{id:50,name:'C'},{id:54,name:'C++'},{id:62,name:'Java'},{id:63,name:'JavaScript'},{id:71,name:'Python'}];
-const langSelect=document.getElementById('langSelect');
-LANGS.forEach(l=>langSelect.add(new Option(l.name,l.id)));
-
-async function run(){
-  const payload={language_id:langSelect.value,source_code:document.getElementById('code').value,stdin:document.getElementById('stdin').value};
-  document.getElementById('output').textContent='Running…';
-  try{
-    const r=await fetch('https://cors-anywhere.herokuapp.com/https://ce.judge0.com/submissions?base64_encoded=false&wait=true',{
-      method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(payload)
-    });
-    const d=await r.json();
-    document.getElementById('output').textContent=d.stdout||d.stderr||d.compile_output||'No output';
-  }catch(e){document.getElementById('output').textContent='Error: '+e;}
+function handleClick(i){
+  if(board[i]!="" || gameOver) return;
+  board[i]=currentPlayer;
+  clickSound.play();
+  checkWinner();
+  currentPlayer = currentPlayer==="X"?"O":"X";
+  if(!gameOver) infoEl.textContent=`Player ${currentPlayer}'s turn`;
+  createBoard();
 }
-document.getElementById('runBtn').onclick=run;
-document.getElementById('copyCodeBtn').onclick=()=>navigator.clipboard.writeText(document.getElementById('code').value);
+function checkWinner(){
+  for(const combo of winningCombos){
+    const [a,b,c]=combo;
+    if(board[a] && board[a]===board[b] && board[a]===board[c]){
+      infoEl.textContent=`Player ${board[a]} Wins!`;
+      gameOver=true;
+      winSound.play();
+      return;
+    }
+  }
+  if(!board.includes("")) { infoEl.textContent="It's a Draw!"; gameOver=true; }
+}
 
-// Privacy modal
-document.getElementById('privacyBtn').onclick=()=>document.getElementById('privacyModal').style.display='flex';
-document.getElementById('closePrivacy').onclick=()=>document.getElementById('privacyModal').style.display='none';
+document.getElementById('resetBtn').onclick=()=>{
+  board=["","","","","","","","",""];
+  currentPlayer="X";
+  gameOver=false;
+  infoEl.textContent=`Player ${currentPlayer}'s turn`;
+  createBoard();
+}
+
+createBoard();
 </script>
 </body>
 </html>
