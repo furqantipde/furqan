@@ -1,223 +1,160 @@
-# Project: Currency Converter + Compiler (Plain HTML + Node.js)
-
----
-
-## files included
-
-### 1) `index.html` (single-file frontend)
-- Clean, responsive, light/dark UI
-- Currency converter with flags
-- CSV export, copy-to-clipboard
-- Compiler front-end (Monaco commented optional) that sends code to the backend `/api/compile`
-- Privacy Policy modal and footer: **Made by Furqan**
-
-### 2) `server.js` (Node.js / Express backend)
-- Proxies compile requests to Judge0 (uses RapidAPI endpoint by default)
-- Provides a secure server-side place to store `RAPIDAPI_KEY`
-
-### 3) `.env.example`
-- Example env file showing how to set `RAPIDAPI_KEY` and `PORT`.
-
----
-
-## index.html
-
-```html
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Currency Converter + Compiler — Made by Furqan</title>
-  <meta name="description" content="Simple currency converter with flags + online compiler (backend proxy). Made by Furqan">
   <style>
-    /* Minimal modern UI with light/dark themes */
     :root{--bg:#0b1220;--card:#0f1724;--muted:#9aa4b2;--accent:#7c3aed;--text:#e6eef6}
     [data-theme="light"]{--bg:#f6f8fb;--card:#ffffff;--muted:#5b6b78;--accent:#4f46e5;--text:#071126}
-    *{box-sizing:border-box}
-    body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;background:linear-gradient(180deg,var(--bg),#081226);color:var(--text);min-height:100vh}
-    .container{max-width:1100px;margin:28px auto;padding:18px}
-    header{display:flex;justify-content:space-between;align-items:center;gap:12px}
-    h1{font-size:20px;margin:0}
-    .controls{display:flex;gap:8px;align-items:center}
-    button{background:var(--accent);border:0;padding:8px 10px;border-radius:10px;color:white;cursor:pointer}
-    .card{background:var(--card);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(2,6,23,0.6)}
-    main{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
-    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
-    input, select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
-    .row{display:flex;gap:8px}
+    body{margin:0;font-family:Arial,Helvetica,sans-serif;background:var(--bg);color:var(--text)}
+    .container{max-width:1100px;margin:20px auto;padding:16px}
+    header{display:flex;justify-content:space-between;align-items:center}
+    h1{margin:0;font-size:20px}
+    button{background:var(--accent);border:0;padding:6px 10px;border-radius:8px;color:white;cursor:pointer}
+    select,input,textarea{width:100%;padding:8px;border-radius:6px;border:1px solid #ccc}
+    .card{background:var(--card);padding:14px;border-radius:12px;margin-bottom:20px}
+    .row{display:flex;gap:6px}
+    .output{background:#000;color:#0f0;padding:8px;font-family:monospace;height:120px;overflow:auto;border-radius:6px}
+    .flag{font-size:18px;margin-right:4px}
     .small{font-size:12px;color:var(--muted)}
-    .output{height:160px;overflow:auto;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.2);font-family:monospace}
-    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
-    @media (max-width:880px){main{grid-template-columns:1fr}}
-    .flag{font-size:18px;margin-right:6px}
-    .quick{display:flex;gap:8px;flex-wrap:wrap}
-    .link-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text);padding:6px 8px;border-radius:8px}
-    .privacy{position:fixed;right:18px;bottom:18px}
+    footer{text-align:center;font-size:12px;color:var(--muted);margin-top:20px}
+    .link-btn{background:transparent;border:1px solid var(--muted);color:var(--text)}
+    .privacy{position:fixed;bottom:10px;right:10px}
+    #privacyModal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);align-items:center;justify-content:center}
+    #privacyModal .box{background:var(--card);padding:20px;border-radius:12px;max-width:600px}
   </style>
 </head>
 <body data-theme="dark">
-  <div class="container">
-    <header>
-      <div>
-        <h1>Currency Converter + Compiler</h1>
-        <div class="small">Made by Furqan — Light/Dark • Flags • CSV export</div>
-      </div>
-      <div class="controls">
-        <button id="themeBtn">Toggle Theme</button>
-        <button id="privacyBtn" class="link-btn">Privacy</button>
-      </div>
-    </header>
-
-    <main>
-      <section class="card">
-        <h3>Currency Converter</h3>
-        <label>Amount</label>
-        <div class="row">
-          <input id="amount" type="number" value="1" min="0" step="any">
-          <select id="from"></select>
-          <button id="swapBtn" class="link-btn">↔</button>
-          <select id="to"></select>
-        </div>
-        <div style="margin-top:10px" class="row">
-          <button id="convertBtn">Convert</button>
-          <button id="csvBtn" class="link-btn">Export CSV</button>
-          <button id="copyBtn" class="link-btn">Copy Result</button>
-        </div>
-        <div class="small" id="rateInfo">Rates: exchangerate.host</div>
-        <div style="margin-top:12px;font-weight:700" id="result">—</div>
-        <div style="margin-top:12px">
-          <label>Quick</label>
-          <div class="quick" id="quickBtns"></div>
-        </div>
-      </section>
-
-      <section class="card">
-        <h3>Online Compiler (All languages)</h3>
-        <label>Language</label>
-        <select id="langSelect"></select>
-        <label style="margin-top:8px">Code</label>
-        <textarea id="code" rows="10">#include &lt;stdio.h&gt;\nint main(){printf("Hello, world!\n");return 0;}</textarea>
-        <label style="margin-top:8px">Stdin (optional)</label>
-        <input id="stdin" placeholder="Input for your program">
-        <div style="margin-top:8px" class="row">
-          <button id="runBtn">Run</button>
-          <button id="copyCodeBtn" class="link-btn">Copy Code</button>
-        </div>
-        <div class="output" id="output">Output will appear here.</div>
-        <div class="small" style="margin-top:8px">Note: This uses the server-side `/api/compile` endpoint. Add your Judge0/RapidAPI key to the server.</div>
-      </section>
-    </main>
-
-    <footer>
-      © <strong>Furqan</strong> — Simple tools for devs. Built with ❤️. View privacy for details.
-    </footer>
-  </div>
-
-  <!-- Privacy modal -->
-  <div id="privacyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:18px">
-    <div style="max-width:700px;background:var(--card);padding:18px;border-radius:12px;">
-      <h3>Privacy Policy</h3>
-      <p class="small">This site does not collect personal data. The compiler proxy sends only source code and stdin to Judge0 for compilation. No user-identifying data is stored. If you host your own Judge0 instance, submissions stay on your infrastructure.</p>
-      <p class="small">Made by Furqan — contact: <em>your-email@example.com</em></p>
-      <div style="text-align:right;margin-top:8px"><button id="closePrivacy" class="link-btn">Close</button></div>
+<div class="container">
+  <header>
+    <h1>Currency Converter + Compiler</h1>
+    <div>
+      <button id="themeBtn">Toggle Theme</button>
+      <button id="privacyBtn" class="link-btn">Privacy</button>
     </div>
+  </header>
+
+  <!-- Currency Converter -->
+  <div class="card">
+    <h3>Currency Converter</h3>
+    <div class="row">
+      <input id="amount" type="number" value="1" min="0"/>
+      <select id="from"></select>
+      <button id="swapBtn" class="link-btn">↔</button>
+      <select id="to"></select>
+    </div>
+    <div style="margin-top:8px" class="row">
+      <button id="convertBtn">Convert</button>
+      <button id="csvBtn" class="link-btn">Export CSV</button>
+      <button id="copyBtn" class="link-btn">Copy</button>
+    </div>
+    <div class="small" id="rateInfo">Using exchangerate.host</div>
+    <div id="result" style="margin-top:10px;font-weight:700">—</div>
   </div>
 
-  <script>
-    // --- Theme ---
-    const body = document.body;
-    const themeBtn = document.getElementById('themeBtn');
-    themeBtn.addEventListener('click', ()=>{ const t = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; body.setAttribute('data-theme', t); localStorage.setItem('theme', t); });
-    if(localStorage.getItem('theme')) body.setAttribute('data-theme', localStorage.getItem('theme'));
+  <!-- Compiler -->
+  <div class="card">
+    <h3>Online Compiler</h3>
+    <label>Language</label>
+    <select id="langSelect"></select>
+    <label style="margin-top:6px">Code</label>
+    <textarea id="code" rows="8">#include &lt;stdio.h&gt;\nint main(){printf("Hello, world!\\n");return 0;}</textarea>
+    <label style="margin-top:6px">Input</label>
+    <input id="stdin" placeholder="Optional stdin"/>
+    <div class="row" style="margin-top:8px">
+      <button id="runBtn">Run</button>
+      <button id="copyCodeBtn" class="link-btn">Copy Code</button>
+    </div>
+    <div class="output" id="output">Output here…</div>
+    <div class="small">⚠️ Uses Judge0 API via RapidAPI. Put your API key in the JS.</div>
+  </div>
 
-    // --- Currency data with flags ---
-    const CURRENCIES = [
-      {code:'USD',name:'US Dollar',flag:'🇺🇸'},
-      {code:'EUR',name:'Euro',flag:'🇪🇺'},
-      {code:'GBP',name:'British Pound',flag:'🇬🇧'},
-      {code:'JPY',name:'Japanese Yen',flag:'🇯🇵'},
-      {code:'AUD',name:'Australian Dollar',flag:'🇦🇺'},
-      {code:'CAD',name:'Canadian Dollar',flag:'🇨🇦'},
-      {code:'CHF',name:'Swiss Franc',flag:'🇨🇭'},
-      {code:'CNY',name:'Chinese Yuan',flag:'🇨🇳'},
-      {code:'INR',name:'Indian Rupee',flag:'🇮🇳'},
-      {code:'PKR',name:'Pakistani Rupee',flag:'🇵🇰'},
-      {code:'BRL',name:'Brazilian Real',flag:'🇧🇷'},
-      {code:'RUB',name:'Russian Ruble',flag:'🇷🇺'}
-    ];
+  <footer>© Made by Furqan — Simple tools with ❤️</footer>
+</div>
 
-    const fromSel = document.getElementById('from');
-    const toSel = document.getElementById('to');
-    const amountEl = document.getElementById('amount');
-    const resultEl = document.getElementById('result');
-    const rateInfo = document.getElementById('rateInfo');
-    const quickBtns = document.getElementById('quickBtns');
+<!-- Privacy modal -->
+<div id="privacyModal">
+  <div class="box">
+    <h3>Privacy Policy</h3>
+    <p>This site does not store your data. Currency rates are fetched from exchangerate.host. Code is sent to Judge0 API for execution (via RapidAPI). Your API key is required in the JS for compiler to work.</p>
+    <p>Made by Furqan</p>
+    <button id="closePrivacy">Close</button>
+  </div>
+</div>
 
-    function populate() {
-      for(const c of CURRENCIES){
-        const o1 = document.createElement('option'); o1.value = c.code; o1.textContent = `${c.flag} ${c.code}`; fromSel.appendChild(o1);
-        const o2 = document.createElement('option'); o2.value = c.code; o2.textContent = `${c.flag} ${c.code}`; toSel.appendChild(o2);
-        const qb = document.createElement('button'); qb.className='link-btn'; qb.textContent = `${c.flag} ${c.code}`; qb.addEventListener('click', ()=>{ toSel.value = c.code; convert(); }); quickBtns.appendChild(qb);
-      }
-      fromSel.value='USD'; toSel.value='PKR';
-    }
-    populate();
+<script>
+  // --- Theme ---
+  const body=document.body;
+  document.getElementById('themeBtn').onclick=()=>{
+    const t=body.getAttribute('data-theme')==='dark'?'light':'dark';
+    body.setAttribute('data-theme',t);localStorage.setItem('theme',t);
+  };
+  if(localStorage.getItem('theme')) body.setAttribute('data-theme',localStorage.getItem('theme'));
 
-    async function convert(){
-      const from = fromSel.value, to = toSel.value, amount = parseFloat(amountEl.value)||0;
-      resultEl.textContent = 'Converting...';
-      try{
-        const resp = await fetch(`https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amount}`);
-        const data = await resp.json();
-        rateInfo.textContent = `1 ${from} = ${data.info.rate} ${to} (exchangerate.host)`;
-        resultEl.textContent = `${amount} ${from} ≈ ${Number(data.result).toLocaleString(undefined,{maximumFractionDigits:6})} ${to}`;
-      }catch(e){ resultEl.textContent = 'Rate fetch error'; }
-    }
+  // --- Currencies with flags ---
+  const CURRENCIES=[
+    {code:'USD',flag:'🇺🇸'},{code:'EUR',flag:'🇪🇺'},{code:'GBP',flag:'🇬🇧'},{code:'JPY',flag:'🇯🇵'},
+    {code:'AUD',flag:'🇦🇺'},{code:'CAD',flag:'🇨🇦'},{code:'CHF',flag:'🇨🇭'},{code:'CNY',flag:'🇨🇳'},
+    {code:'INR',flag:'🇮🇳'},{code:'PKR',flag:'🇵🇰'},{code:'BRL',flag:'🇧🇷'}
+  ];
+  const fromSel=document.getElementById('from'),toSel=document.getElementById('to');
+  CURRENCIES.forEach(c=>{
+    const o1=new Option(`${c.flag} ${c.code}`,c.code);
+    const o2=new Option(`${c.flag} ${c.code}`,c.code);
+    fromSel.add(o1);toSel.add(o2);
+  });
+  fromSel.value='USD';toSel.value='PKR';
 
-    document.getElementById('convertBtn').addEventListener('click', convert);
-    document.getElementById('swapBtn').addEventListener('click', ()=>{ const a=fromSel.value; fromSel.value=toSel.value; toSel.value=a; convert(); });
-    document.getElementById('csvBtn').addEventListener('click', ()=>{
-      const csv = `Amount,From,To,Result\n${amountEl.value},${fromSel.value},${toSel.value},${resultEl.textContent}`;
-      const blob = new Blob([csv],{type:'text/csv'});
-      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='conversion.csv'; a.click(); URL.revokeObjectURL(url);
-    });
-    document.getElementById('copyBtn').addEventListener('click', ()=>{ navigator.clipboard.writeText(resultEl.textContent).then(()=>alert('Result copied')) });
+  async function convert(){
+    const from=fromSel.value,to=toSel.value,amt=document.getElementById('amount').value;
+    document.getElementById('result').textContent='Converting…';
+    try{
+      const r=await fetch(`https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amt}`);
+      const d=await r.json();
+      document.getElementById('rateInfo').textContent=`1 ${from} = ${d.info.rate} ${to}`;
+      document.getElementById('result').textContent=`${amt} ${from} ≈ ${d.result} ${to}`;
+    }catch(e){document.getElementById('result').textContent='Error';}
+  }
+  document.getElementById('convertBtn').onclick=convert;
+  document.getElementById('swapBtn').onclick=()=>{[fromSel.value,toSel.value]=[toSel.value,fromSel.value];convert();};
+  document.getElementById('csvBtn').onclick=()=>{
+    const csv=`Amount,From,To,Result\n${amount.value},${fromSel.value},${toSel.value},${result.textContent}`;
+    const blob=new Blob([csv],{type:'text/csv'});const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');a.href=url;a.download='conversion.csv';a.click();URL.revokeObjectURL(url);
+  };
+  document.getElementById('copyBtn').onclick=()=>navigator.clipboard.writeText(result.textContent);
+  convert();
 
-    // --- Compiler UI ---
-    const LANGS = [
-      {id:50,name:'C'}, {id:54,name:'C++'}, {id:71,name:'Python'}, {id:63,name:'JavaScript'}, {id:62,name:'Java'}, {id:73,name:'Rust'}, {id:76,name:'C#'}
-    ];
-    const langSelect = document.getElementById('langSelect');
-    const codeEl = document.getElementById('code');
-    const stdinEl = document.getElementById('stdin');
-    const outputEl = document.getElementById('output');
+  // --- Compiler ---
+  const LANGS=[{id:50,name:'C'},{id:54,name:'C++'},{id:62,name:'Java'},{id:63,name:'JavaScript'},{id:71,name:'Python'}];
+  const langSelect=document.getElementById('langSelect');
+  LANGS.forEach(l=>langSelect.add(new Option(l.name,l.id)));
 
-    for(const l of LANGS){ const o = document.createElement('option'); o.value=l.id; o.textContent=l.name; langSelect.appendChild(o); }
+  const API_KEY="PUT_YOUR_RAPIDAPI_KEY_HERE"; // 👈 Add your RapidAPI key
+  async function run(){
+    const payload={language_id:langSelect.value,source_code:document.getElementById('code').value,stdin:document.getElementById('stdin').value};
+    document.getElementById('output').textContent='Running…';
+    try{
+      const r=await fetch("https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=false&wait=true",{
+        method:"POST",
+        headers:{
+          "Content-Type":"application/json",
+          "X-RapidAPI-Key":API_KEY,
+          "X-RapidAPI-Host":"judge0-ce.p.rapidapi.com"
+        },
+        body:JSON.stringify(payload)
+      });
+      const d=await r.json();
+      document.getElementById('output').textContent=d.stdout||d.stderr||d.compile_output||'No output';
+    }catch(e){document.getElementById('output').textContent="Error: "+e;}
+  }
+  document.getElementById('runBtn').onclick=run;
+  document.getElementById('copyCodeBtn').onclick=()=>navigator.clipboard.writeText(document.getElementById('code').value);
 
-    document.getElementById('runBtn').addEventListener('click', async ()=>{
-      outputEl.textContent='Running...';
-      try{
-        const payload = { language_id: parseInt(langSelect.value), source_code: codeEl.value, stdin: stdinEl.value };
-        const r = await fetch('/api/compile',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
-        const d = await r.json();
-        outputEl.textContent = d.output || 'No output';
-      }catch(e){ outputEl.textContent='Run error: '+e.message; }
-    });
-
-    document.getElementById('copyCodeBtn').addEventListener('click', ()=>{ navigator.clipboard.writeText(codeEl.value).then(()=>alert('Code copied')) });
-
-    // --- Privacy modal ---
-    const privacyBtn = document.getElementById('privacyBtn'); const privacyModal = document.getElementById('privacyModal'); const closePrivacy = document.getElementById('closePrivacy');
-    privacyBtn.addEventListener('click', ()=>privacyModal.style.display='flex');
-    closePrivacy.addEventListener('click', ()=>privacyModal.style.display='none');
-
-    // init
-    convert();
-  </script>
+  // --- Privacy modal ---
+  document.getElementById('privacyBtn').onclick=()=>document.getElementById('privacyModal').style.display='flex';
+  document.getElementById('closePrivacy').onclick=()=>document.getElementById('privacyModal').style.display='none';
+</script>
 </body>
 </html>
-```
-
----
-
