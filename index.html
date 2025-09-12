@@ -1,180 +1,305 @@
-import { useState, useEffect } from "react";
-import { Card } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Select } from "@/components/ui/select";
-import { Textarea } from "@/components/ui/textarea";
-import { Input } from "@/components/ui/input";
-import { Sun, Moon, RefreshCw, Play, Copy } from "lucide-react";
-import { motion } from "framer-motion";
-import { saveAs } from "file-saver";
+# Project: Currency Converter + Compiler (Plain HTML + Node.js)
 
-// Utility: Fetch currency symbols with flags
-const CURRENCIES = [
-  { code: "USD", flag: "🇺🇸" },
-  { code: "EUR", flag: "🇪🇺" },
-  { code: "GBP", flag: "🇬🇧" },
-  { code: "JPY", flag: "🇯🇵" },
-  { code: "AUD", flag: "🇦🇺" },
-  { code: "CAD", flag: "🇨🇦" },
-  { code: "CHF", flag: "🇨🇭" },
-  { code: "CNY", flag: "🇨🇳" },
-  { code: "INR", flag: "🇮🇳" },
-  { code: "PKR", flag: "🇵🇰" },
-];
+---
 
-// Compiler language mapping (Judge0 IDs)
-const LANGUAGES = [
-  { id: 50, name: "C", sample: "#include <stdio.h>\\nint main(){printf(\"Hello C\\n\");return 0;}" },
-  { id: 54, name: "C++", sample: "#include <bits/stdc++.h>\\nusing namespace std;int main(){cout<<\"Hello C++\\n\";}" },
-  { id: 71, name: "Python", sample: "print(\"Hello Python\")" },
-  { id: 63, name: "JavaScript", sample: "console.log(\"Hello JS\")" },
-  { id: 62, name: "Java", sample: "class Main{public static void main(String[]a){System.out.println(\"Hello Java\");}}" },
-  { id: 73, name: "Rust", sample: "fn main(){println!(\"Hello Rust\");}" },
-  { id: 76, name: "C#", sample: "using System;class P{static void Main(){Console.WriteLine(\"Hello C#\");}}" }
-];
+## files included
 
-export default function App() {
-  const [theme, setTheme] = useState("dark");
+### 1) `index.html` (single-file frontend)
+- Clean, responsive, light/dark UI
+- Currency converter with flags
+- CSV export, copy-to-clipboard
+- Compiler front-end (Monaco commented optional) that sends code to the backend `/api/compile`
+- Privacy Policy modal and footer: **Made by Furqan**
 
-  // Converter state
-  const [amount, setAmount] = useState(1);
-  const [from, setFrom] = useState("USD");
-  const [to, setTo] = useState("PKR");
-  const [result, setResult] = useState("—");
-  const [rateInfo, setRateInfo] = useState("");
+### 2) `server.js` (Node.js / Express backend)
+- Proxies compile requests to Judge0 (uses RapidAPI endpoint by default)
+- Provides a secure server-side place to store `RAPIDAPI_KEY`
 
-  // Compiler state
-  const [lang, setLang] = useState(LANGUAGES[0]);
-  const [code, setCode] = useState(LANGUAGES[0].sample);
-  const [stdin, setStdin] = useState("");
-  const [output, setOutput] = useState("Output will appear here.");
+### 3) `.env.example`
+- Example env file showing how to set `RAPIDAPI_KEY` and `PORT`.
 
-  // Theme toggle
-  useEffect(() => {
-    document.documentElement.classList.toggle("dark", theme === "dark");
-  }, [theme]);
+---
 
-  // Converter
-  async function convert() {
-    setResult("Converting...");
-    try {
-      const res = await fetch(`https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amount}`);
-      const data = await res.json();
-      setRateInfo(`1 ${from} = ${data.info.rate} ${to}`);
-      setResult(`${amount} ${from} ≈ ${data.result.toLocaleString()} ${to}`);
-    } catch (e) {
-      setResult("Error fetching rates");
-    }
-  }
+## index.html
 
-  function exportCSV() {
-    const csv = `Amount,From,To,Result\\n${amount},${from},${to},${result}`;
-    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
-    saveAs(blob, "conversion.csv");
-  }
-
-  // Compiler (via Node backend proxy)
-  async function runCode() {
-    setOutput("Running...");
-    try {
-      const res = await fetch("/api/compile", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ language_id: lang.id, source_code: code, stdin }),
-      });
-      const data = await res.json();
-      setOutput(data.output || "No output");
-    } catch (e) {
-      setOutput("Error running code");
-    }
-  }
-
-  return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen bg-gradient-to-b from-gray-900 to-gray-800 dark:from-gray-950 dark:to-black text-gray-100 p-6">
-      <header className="flex justify-between items-center">
-        <h1 className="text-xl font-bold">Currency Converter + Compiler</h1>
-        <div className="flex gap-2">
-          <Button onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-            {theme === "dark" ? <Sun /> : <Moon />}
-          </Button>
-          <Button onClick={exportCSV}>Export CSV</Button>
-        </div>
-      </header>
-
-      <div className="grid md:grid-cols-2 gap-6 mt-6">
-        {/* Converter */}
-        <Card className="p-4 space-y-3">
-          <h2 className="font-semibold">Currency Converter</h2>
-          <div className="flex gap-2">
-            <Input type="number" value={amount} onChange={e => setAmount(e.target.value)} />
-            <Select value={from} onChange={e => setFrom(e.target.value)}>
-              {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-            </Select>
-            <Button variant="outline" onClick={() => { setFrom(to); setTo(from); }}> <RefreshCw /> </Button>
-            <Select value={to} onChange={e => setTo(e.target.value)}>
-              {CURRENCIES.map(c => <option key={c.code} value={c.code}>{c.flag} {c.code}</option>)}
-            </Select>
-          </div>
-          <Button onClick={convert}>Convert</Button>
-          <div>{result}</div>
-          <div className="text-xs text-gray-400">{rateInfo}</div>
-        </Card>
-
-        {/* Compiler */}
-        <Card className="p-4 space-y-3">
-          <h2 className="font-semibold">Online Compiler</h2>
-          <Select value={lang.name} onChange={e => {
-            const l = LANGUAGES.find(x => x.name === e.target.value);
-            setLang(l); setCode(l.sample);
-          }}>
-            {LANGUAGES.map(l => <option key={l.id}>{l.name}</option>)}
-          </Select>
-          <Textarea rows={10} value={code} onChange={e => setCode(e.target.value)} />
-          <Input placeholder="Stdin (optional)" value={stdin} onChange={e => setStdin(e.target.value)} />
-          <div className="flex gap-2">
-            <Button onClick={runCode}><Play /> Run</Button>
-            <Button onClick={() => {navigator.clipboard.writeText(code)}}><Copy /> Copy</Button>
-          </div>
-          <pre className="bg-black/40 p-2 rounded text-xs whitespace-pre-wrap">{output}</pre>
-        </Card>
+```html
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Currency Converter + Compiler — Made by Furqan</title>
+  <meta name="description" content="Simple currency converter with flags + online compiler (backend proxy). Made by Furqan">
+  <style>
+    /* Minimal modern UI with light/dark themes */
+    :root{--bg:#0b1220;--card:#0f1724;--muted:#9aa4b2;--accent:#7c3aed;--text:#e6eef6}
+    [data-theme="light"]{--bg:#f6f8fb;--card:#ffffff;--muted:#5b6b78;--accent:#4f46e5;--text:#071126}
+    *{box-sizing:border-box}
+    body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;margin:0;background:linear-gradient(180deg,var(--bg),#081226);color:var(--text);min-height:100vh}
+    .container{max-width:1100px;margin:28px auto;padding:18px}
+    header{display:flex;justify-content:space-between;align-items:center;gap:12px}
+    h1{font-size:20px;margin:0}
+    .controls{display:flex;gap:8px;align-items:center}
+    button{background:var(--accent);border:0;padding:8px 10px;border-radius:10px;color:white;cursor:pointer}
+    .card{background:var(--card);padding:14px;border-radius:12px;border:1px solid rgba(255,255,255,0.03);box-shadow:0 6px 18px rgba(2,6,23,0.6)}
+    main{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+    label{display:block;font-size:13px;color:var(--muted);margin-bottom:6px}
+    input, select, textarea{width:100%;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:transparent;color:var(--text)}
+    .row{display:flex;gap:8px}
+    .small{font-size:12px;color:var(--muted)}
+    .output{height:160px;overflow:auto;padding:10px;border-radius:8px;border:1px solid rgba(255,255,255,0.04);background:rgba(0,0,0,0.2);font-family:monospace}
+    footer{margin-top:18px;color:var(--muted);font-size:13px;text-align:center}
+    @media (max-width:880px){main{grid-template-columns:1fr}}
+    .flag{font-size:18px;margin-right:6px}
+    .quick{display:flex;gap:8px;flex-wrap:wrap}
+    .link-btn{background:transparent;border:1px solid rgba(255,255,255,0.06);color:var(--text);padding:6px 8px;border-radius:8px}
+    .privacy{position:fixed;right:18px;bottom:18px}
+  </style>
+</head>
+<body data-theme="dark">
+  <div class="container">
+    <header>
+      <div>
+        <h1>Currency Converter + Compiler</h1>
+        <div class="small">Made by Furqan — Light/Dark • Flags • CSV export</div>
       </div>
-    </motion.div>
-  );
-}
+      <div class="controls">
+        <button id="themeBtn">Toggle Theme</button>
+        <button id="privacyBtn" class="link-btn">Privacy</button>
+      </div>
+    </header>
 
-/* ---------------- Node.js backend example (/api/compile) ----------------
-import express from "express";
-import fetch from "node-fetch";
+    <main>
+      <section class="card">
+        <h3>Currency Converter</h3>
+        <label>Amount</label>
+        <div class="row">
+          <input id="amount" type="number" value="1" min="0" step="any">
+          <select id="from"></select>
+          <button id="swapBtn" class="link-btn">↔</button>
+          <select id="to"></select>
+        </div>
+        <div style="margin-top:10px" class="row">
+          <button id="convertBtn">Convert</button>
+          <button id="csvBtn" class="link-btn">Export CSV</button>
+          <button id="copyBtn" class="link-btn">Copy Result</button>
+        </div>
+        <div class="small" id="rateInfo">Rates: exchangerate.host</div>
+        <div style="margin-top:12px;font-weight:700" id="result">—</div>
+        <div style="margin-top:12px">
+          <label>Quick</label>
+          <div class="quick" id="quickBtns"></div>
+        </div>
+      </section>
+
+      <section class="card">
+        <h3>Online Compiler (All languages)</h3>
+        <label>Language</label>
+        <select id="langSelect"></select>
+        <label style="margin-top:8px">Code</label>
+        <textarea id="code" rows="10">#include &lt;stdio.h&gt;\nint main(){printf("Hello, world!\n");return 0;}</textarea>
+        <label style="margin-top:8px">Stdin (optional)</label>
+        <input id="stdin" placeholder="Input for your program">
+        <div style="margin-top:8px" class="row">
+          <button id="runBtn">Run</button>
+          <button id="copyCodeBtn" class="link-btn">Copy Code</button>
+        </div>
+        <div class="output" id="output">Output will appear here.</div>
+        <div class="small" style="margin-top:8px">Note: This uses the server-side `/api/compile` endpoint. Add your Judge0/RapidAPI key to the server.</div>
+      </section>
+    </main>
+
+    <footer>
+      © <strong>Furqan</strong> — Simple tools for devs. Built with ❤️. View privacy for details.
+    </footer>
+  </div>
+
+  <!-- Privacy modal -->
+  <div id="privacyModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.6);align-items:center;justify-content:center;padding:18px">
+    <div style="max-width:700px;background:var(--card);padding:18px;border-radius:12px;">
+      <h3>Privacy Policy</h3>
+      <p class="small">This site does not collect personal data. The compiler proxy sends only source code and stdin to Judge0 for compilation. No user-identifying data is stored. If you host your own Judge0 instance, submissions stay on your infrastructure.</p>
+      <p class="small">Made by Furqan — contact: <em>your-email@example.com</em></p>
+      <div style="text-align:right;margin-top:8px"><button id="closePrivacy" class="link-btn">Close</button></div>
+    </div>
+  </div>
+
+  <script>
+    // --- Theme ---
+    const body = document.body;
+    const themeBtn = document.getElementById('themeBtn');
+    themeBtn.addEventListener('click', ()=>{ const t = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark'; body.setAttribute('data-theme', t); localStorage.setItem('theme', t); });
+    if(localStorage.getItem('theme')) body.setAttribute('data-theme', localStorage.getItem('theme'));
+
+    // --- Currency data with flags ---
+    const CURRENCIES = [
+      {code:'USD',name:'US Dollar',flag:'🇺🇸'},
+      {code:'EUR',name:'Euro',flag:'🇪🇺'},
+      {code:'GBP',name:'British Pound',flag:'🇬🇧'},
+      {code:'JPY',name:'Japanese Yen',flag:'🇯🇵'},
+      {code:'AUD',name:'Australian Dollar',flag:'🇦🇺'},
+      {code:'CAD',name:'Canadian Dollar',flag:'🇨🇦'},
+      {code:'CHF',name:'Swiss Franc',flag:'🇨🇭'},
+      {code:'CNY',name:'Chinese Yuan',flag:'🇨🇳'},
+      {code:'INR',name:'Indian Rupee',flag:'🇮🇳'},
+      {code:'PKR',name:'Pakistani Rupee',flag:'🇵🇰'},
+      {code:'BRL',name:'Brazilian Real',flag:'🇧🇷'},
+      {code:'RUB',name:'Russian Ruble',flag:'🇷🇺'}
+    ];
+
+    const fromSel = document.getElementById('from');
+    const toSel = document.getElementById('to');
+    const amountEl = document.getElementById('amount');
+    const resultEl = document.getElementById('result');
+    const rateInfo = document.getElementById('rateInfo');
+    const quickBtns = document.getElementById('quickBtns');
+
+    function populate() {
+      for(const c of CURRENCIES){
+        const o1 = document.createElement('option'); o1.value = c.code; o1.textContent = `${c.flag} ${c.code}`; fromSel.appendChild(o1);
+        const o2 = document.createElement('option'); o2.value = c.code; o2.textContent = `${c.flag} ${c.code}`; toSel.appendChild(o2);
+        const qb = document.createElement('button'); qb.className='link-btn'; qb.textContent = `${c.flag} ${c.code}`; qb.addEventListener('click', ()=>{ toSel.value = c.code; convert(); }); quickBtns.appendChild(qb);
+      }
+      fromSel.value='USD'; toSel.value='PKR';
+    }
+    populate();
+
+    async function convert(){
+      const from = fromSel.value, to = toSel.value, amount = parseFloat(amountEl.value)||0;
+      resultEl.textContent = 'Converting...';
+      try{
+        const resp = await fetch(`https://api.exchangerate.host/convert?from=${from}&to=${to}&amount=${amount}`);
+        const data = await resp.json();
+        rateInfo.textContent = `1 ${from} = ${data.info.rate} ${to} (exchangerate.host)`;
+        resultEl.textContent = `${amount} ${from} ≈ ${Number(data.result).toLocaleString(undefined,{maximumFractionDigits:6})} ${to}`;
+      }catch(e){ resultEl.textContent = 'Rate fetch error'; }
+    }
+
+    document.getElementById('convertBtn').addEventListener('click', convert);
+    document.getElementById('swapBtn').addEventListener('click', ()=>{ const a=fromSel.value; fromSel.value=toSel.value; toSel.value=a; convert(); });
+    document.getElementById('csvBtn').addEventListener('click', ()=>{
+      const csv = `Amount,From,To,Result\n${amountEl.value},${fromSel.value},${toSel.value},${resultEl.textContent}`;
+      const blob = new Blob([csv],{type:'text/csv'});
+      const url = URL.createObjectURL(blob); const a = document.createElement('a'); a.href=url; a.download='conversion.csv'; a.click(); URL.revokeObjectURL(url);
+    });
+    document.getElementById('copyBtn').addEventListener('click', ()=>{ navigator.clipboard.writeText(resultEl.textContent).then(()=>alert('Result copied')) });
+
+    // --- Compiler UI ---
+    const LANGS = [
+      {id:50,name:'C'}, {id:54,name:'C++'}, {id:71,name:'Python'}, {id:63,name:'JavaScript'}, {id:62,name:'Java'}, {id:73,name:'Rust'}, {id:76,name:'C#'}
+    ];
+    const langSelect = document.getElementById('langSelect');
+    const codeEl = document.getElementById('code');
+    const stdinEl = document.getElementById('stdin');
+    const outputEl = document.getElementById('output');
+
+    for(const l of LANGS){ const o = document.createElement('option'); o.value=l.id; o.textContent=l.name; langSelect.appendChild(o); }
+
+    document.getElementById('runBtn').addEventListener('click', async ()=>{
+      outputEl.textContent='Running...';
+      try{
+        const payload = { language_id: parseInt(langSelect.value), source_code: codeEl.value, stdin: stdinEl.value };
+        const r = await fetch('/api/compile',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify(payload)});
+        const d = await r.json();
+        outputEl.textContent = d.output || 'No output';
+      }catch(e){ outputEl.textContent='Run error: '+e.message; }
+    });
+
+    document.getElementById('copyCodeBtn').addEventListener('click', ()=>{ navigator.clipboard.writeText(codeEl.value).then(()=>alert('Code copied')) });
+
+    // --- Privacy modal ---
+    const privacyBtn = document.getElementById('privacyBtn'); const privacyModal = document.getElementById('privacyModal'); const closePrivacy = document.getElementById('closePrivacy');
+    privacyBtn.addEventListener('click', ()=>privacyModal.style.display='flex');
+    closePrivacy.addEventListener('click', ()=>privacyModal.style.display='none');
+
+    // init
+    convert();
+  </script>
+</body>
+</html>
+```
+
+---
+
+## server.js (Express backend proxy)
+
+```js
+// server.js
+import express from 'express';
+import fetch from 'node-fetch';
+import dotenv from 'dotenv';
+import path from 'path';
+
+dotenv.config();
 const app = express();
-app.use(express.json());
+const PORT = process.env.PORT || 3001;
+const RAPIDAPI_KEY = process.env.RAPIDAPI_KEY; // required
 
-app.post("/api/compile", async (req,res)=>{
+app.use(express.json());
+// serve frontend (place index.html in same folder)
+app.use(express.static(path.join(process.cwd())));
+
+app.post('/api/compile', async (req,res)=>{
   try{
+    if(!RAPIDAPI_KEY) return res.status(500).json({output:'Server misconfigured: RAPIDAPI_KEY missing'});
     const { language_id, source_code, stdin } = req.body;
     const payload = {
       language_id,
-      source_code: Buffer.from(source_code).toString("base64"),
-      stdin: Buffer.from(stdin || "").toString("base64"),
+      source_code: Buffer.from(source_code || '').toString('base64'),
+      stdin: Buffer.from(stdin || '').toString('base64')
     };
-    const r = await fetch("https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=true&wait=true",{
-      method:"POST",
+
+    const r = await fetch('https://judge0-ce.p.rapidapi.com/submissions?base64_encoded=true&wait=true',{
+      method:'POST',
       headers:{
-        "Content-Type":"application/json",
-        "X-RapidAPI-Key": "YOUR_KEY",
-        "X-RapidAPI-Host": "judge0-ce.p.rapidapi.com"
+        'Content-Type':'application/json',
+        'X-RapidAPI-Key': RAPIDAPI_KEY,
+        'X-RapidAPI-Host': 'judge0-ce.p.rapidapi.com'
       },
       body: JSON.stringify(payload)
     });
-    const d = await r.json();
-    const decode = s=> s? Buffer.from(s,"base64").toString():"";
-    res.json({
-      output: `${decode(d.compile_output)}${decode(d.stderr)}${decode(d.stdout)}`
-    });
-  }catch(err){
-    res.status(500).json({output: "Server error"});
-  }
+
+    if(!r.ok){ const txt = await r.text(); return res.status(500).json({output:'Judge0 error: '+txt}); }
+    const data = await r.json();
+    const decode = s => s ? Buffer.from(s,'base64').toString() : '';
+    const out = `${decode(data.compile_output)}${decode(data.stderr)}${decode(data.stdout)}`;
+    res.json({ output: out });
+  }catch(err){ console.error(err); res.status(500).json({output:'Server error'}); }
 });
 
-app.listen(3001,()=>console.log("Compiler proxy running on 3001"));
------------------------------------------------------------------------- */
+app.listen(PORT, ()=>console.log(`Server running on http://localhost:${PORT}`));
+```
+
+---
+
+## .env.example
+
+```
+RAPIDAPI_KEY=your_rapidapi_key_here
+PORT=3001
+```
+
+---
+
+## How to run (quick)
+1. Put `index.html` and `server.js` in the same folder. Copy `.env.example` to `.env` and set `RAPIDAPI_KEY`.
+2. `npm init -y` then `npm i express node-fetch dotenv` (or `npm i` if package.json provided).
+3. Run: `node server.js` (or `node --experimental-modules server.js` if using older Node; recommended Node 18+).
+4. Open `http://localhost:3001` and test.
+
+---
+
+## Notes & security
+- **Do not** expose your RapidAPI key in client-side code — server proxy keeps it secret.
+- Judge0 public endpoints have rate limits; for heavy use host your own Judge0.
+- The privacy modal is intentionally minimal; include more legal text if you plan to publish.
+
+---
+
+If you want, I can now:
+- Add a ready `package.json` and `start` script.
+- Create a Docker Compose file that runs the frontend static server + a self-hosted Judge0 (heavy, but possible).
+- Improve the UI further with icons and a prettier editor (Monaco) embedded (will increase bundle size).
+
+Tell me which of the above you want next and I’ll add it to this canvas (no React, plain Node.js).
 
