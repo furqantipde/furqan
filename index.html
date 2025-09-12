@@ -460,6 +460,188 @@
       }
     }
   </script>
+  <!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Cool Live Chat</title>
+  <style>
+    .chat51 {
+      max-width: 500px;
+      height: 600px;
+      margin: 30px auto;
+      background: #1e1e2f;
+      border-radius: 20px;
+      box-shadow: 0 0 25px rgba(0, 255, 150, 0.3);
+      display: flex;
+      flex-direction: column;
+      font-family: Arial, sans-serif;
+      overflow: hidden;
+    }
+
+    .chat51-header {
+      background: #00cc66;
+      color: white;
+      padding: 12px;
+      text-align: center;
+      font-weight: bold;
+      font-size: 18px;
+    }
+
+    .chat51-messages {
+      flex: 1;
+      padding: 15px;
+      overflow-y: auto;
+      background: #2a2a40;
+    }
+
+    .chat51-message {
+      margin-bottom: 12px;
+      max-width: 80%;
+      padding: 10px 15px;
+      border-radius: 12px;
+      line-height: 1.4;
+      position: relative;
+      word-wrap: break-word;
+    }
+
+    .chat51-message.user {
+      background: #00cc66;
+      color: black;
+      margin-left: auto;
+      border-bottom-right-radius: 2px;
+    }
+
+    .chat51-message.bot {
+      background: #444466;
+      color: #fff;
+      margin-right: auto;
+      border-bottom-left-radius: 2px;
+    }
+
+    .chat51-footer {
+      padding: 12px;
+      background: #1e1e2f;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .chat51-footer input {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: none;
+      outline: none;
+      background: #33334d;
+      color: white;
+    }
+
+    .chat51-footer button {
+      background: #00cc66;
+      border: none;
+      border-radius: 10px;
+      padding: 10px 15px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: 0.2s;
+    }
+
+    .chat51-footer button:hover {
+      background: #00ff88;
+    }
+
+    /* Extra cool controls */
+    .chat51-controls {
+      display: flex;
+      justify-content: space-between;
+      padding: 8px;
+      background: #222233;
+    }
+
+    .chat51-controls button {
+      background: #444466;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      padding: 6px 12px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: 0.2s;
+    }
+
+    .chat51-controls button:hover {
+      background: #00cc66;
+      color: black;
+    }
+  </style>
+</head>
+<body>
+
+<div class="chat51">
+  <div class="chat51-header">💬 Live Chat</div>
+  
+  <div class="chat51-controls">
+    <button onclick="rateChat()">⭐ Rate</button>
+    <button onclick="askQuestion()">❓ Question</button>
+    <button onclick="sendSticker()">😊 Sticker</button>
+  </div>
+
+  <div class="chat51-messages" id="messages">
+    <div class="chat51-message bot">👋 Welcome to the chat!</div>
+  </div>
+  
+  <div class="chat51-footer">
+    <input type="text" id="chatInput" placeholder="Type a message...">
+    <button onclick="sendMessage()">Send</button>
+  </div>
+</div>
+
+<script>
+  function sendMessage() {
+    const input = document.getElementById("chatInput");
+    const msg = input.value.trim();
+    if (msg === "") return;
+
+    const messages = document.getElementById("messages");
+
+    // User message
+    const userMsg = document.createElement("div");
+    userMsg.className = "chat51-message user";
+    userMsg.textContent = msg;
+    messages.appendChild(userMsg);
+
+    input.value = "";
+
+    // Auto bot reply
+    setTimeout(() => {
+      const botMsg = document.createElement("div");
+      botMsg.className = "chat51-message bot";
+      botMsg.textContent = "🤖 Got it: " + msg;
+      messages.appendChild(botMsg);
+      messages.scrollTop = messages.scrollHeight;
+    }, 600);
+
+    messages.scrollTop = messages.scrollHeight;
+  }
+
+  function rateChat() {
+    alert("⭐ Thanks for rating!");
+  }
+
+  function askQuestion() {
+    alert("❓ You can type your question in the chat box.");
+  }
+
+  function sendSticker() {
+    const messages = document.getElementById("messages");
+    const sticker = document.createElement("div");
+    sticker.className = "chat51-message user";
+    sticker.textContent = "😎🔥🎉";
+    messages.appendChild(sticker);
+    messages.scrollTop = messages.scrollHeight;
+  }
+</script>
 
   <footer class="py-8 text-center text-sm text-slate-600 dark:text-slate-400">
     © <span id="year"></span> Furqan • Built with ❤️ •
@@ -696,6 +878,7 @@
 </style>
 </body>
 </html>
+
 
 
 
