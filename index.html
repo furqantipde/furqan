@@ -3,84 +3,203 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>2-Player Tic-Tac-Toe — Furqan</title>
+<title>2-Player Game Portal — Furqan</title>
 <style>
-  :root{--bg:#0b1220;--card:#0f1724;--accent:#7c3aed;--text:#e6eef6}
-  [data-theme="light"]{--bg:#f6f8fb;--card:#fff;--accent:#4f46e5;--text:#071126}
-  body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;}
-  h1{margin:10px;font-size:24px}
-  .board{display:grid;grid-template-columns:repeat(3,100px);grid-gap:5px;margin:20px}
-  .cell{width:100px;height:100px;background:var(--card);display:flex;align-items:center;justify-content:center;font-size:48px;cursor:pointer;border-radius:10px;transition:0.2s}
-  .cell:hover{background:var(--accent)}
-  .info{margin-top:10px;font-size:18px}
-  button{padding:6px 12px;margin-top:10px;background:var(--accent);color:white;border:none;border-radius:8px;cursor:pointer;}
+:root{--bg:#0b1220;--card:#0f1724;--accent:#7c3aed;--text:#e6eef6}
+[data-theme="light"]{--bg:#f6f8fb;--card:#fff;--accent:#4f46e5;--text:#071126}
+body{margin:0;font-family:Arial,sans-serif;background:var(--bg);color:var(--text);display:flex;flex-direction:column;align-items:center;min-height:100vh;}
+header{display:flex;justify-content:space-between;align-items:center;width:100%;padding:10px 20px;background:var(--card)}
+h1{margin:0;font-size:20px}
+button{padding:6px 10px;border:none;border-radius:8px;cursor:pointer;background:var(--accent);color:#fff;margin:2px;}
+.tab-btn{background:var(--card);border:1px solid var(--accent);color:var(--accent);}
+.tab-btn.active{background:var(--accent);color:#fff;}
+.container{padding:20px;width:100%;max-width:800px;flex:1}
+.board{display:grid;gap:5px;justify-content:center;margin:10px 0}
+.cell{display:flex;align-items:center;justify-content:center;font-size:2em;background:var(--card);border-radius:10px;cursor:pointer;transition:0.2s}
+.cell:hover{background:#7c3aed33}
+.info{margin:10px 0;font-size:16px;text-align:center;}
+.scoreboard{margin-top:10px;font-size:14px;text-align:center;}
 </style>
 </head>
 <body data-theme="dark">
-<h1>2-Player Tic-Tac-Toe</h1>
-<div class="board" id="board"></div>
-<div class="info" id="info">Player X's turn</div>
-<button id="resetBtn">Reset Game</button>
+<header>
+<h1>2-Player Game Portal</h1>
+<div>
+<button id="themeBtn">Toggle Theme</button>
+</div>
+</header>
 
-<audio id="clickSound" src="https://freesound.org/data/previews/341/341695_3248244-lq.mp3"></audio>
-<audio id="winSound" src="https://freesound.org/data/previews/331/331912_3248244-lq.mp3"></audio>
+<div class="container">
+<div id="tabs">
+<button class="tab-btn active" data-game="tictactoe">Tic-Tac-Toe</button>
+<button class="tab-btn" data-game="connect4">Connect 4</button>
+<button class="tab-btn" data-game="ludo">Ludo</button>
+<button class="tab-btn" data-game="chess">Chess</button>
+</div>
+
+<div id="gameContainer"></div>
+<div class="info" id="info"></div>
+<div class="scoreboard" id="scoreboard"></div>
+</div>
 
 <script>
-const boardEl = document.getElementById('board');
-const infoEl = document.getElementById('info');
-const clickSound = document.getElementById('clickSound');
-const winSound = document.getElementById('winSound');
-let board = ["","","","","","","","",""];
-let currentPlayer = "X";
-let gameOver = false;
+// Theme toggle
+const body=document.body;
+document.getElementById('themeBtn').onclick=()=>{
+  const t=body.getAttribute('data-theme')==='dark'?'light':'dark';
+  body.setAttribute('data-theme',t);localStorage.setItem('theme',t);
+};
+if(localStorage.getItem('theme')) body.setAttribute('data-theme',localStorage.getItem('theme'));
 
-const winningCombos=[
-  [0,1,2],[3,4,5],[6,7,8],
-  [0,3,6],[1,4,7],[2,5,8],
-  [0,4,8],[2,4,6]
-];
+// Tabs
+const tabs=document.querySelectorAll('.tab-btn');
+const gameContainer=document.getElementById('gameContainer');
+let currentGame='tictactoe';
+tabs.forEach(tab=>tab.onclick=()=>{
+  tabs.forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  currentGame=tab.dataset.game;
+  loadGame(currentGame);
+});
 
-function createBoard(){
-  boardEl.innerHTML="";
-  board.forEach((cell,i)=>{
-    const div=document.createElement('div');
-    div.classList.add('cell');
-    div.textContent=cell;
-    div.addEventListener('click',()=>handleClick(i));
-    boardEl.appendChild(div);
-  });
+// Scoreboard
+let score={tictactoe:{X:0,O:0},connect4:{Red:0,Yellow:0},ludo:{Red:0,Green:0},chess:{White:0,Black:0}};
+const infoEl=document.getElementById('info');
+const scoreboardEl=document.getElementById('scoreboard');
+function updateScoreboard(){
+  scoreboardEl.innerHTML=`<strong>Scores:</strong><br>
+  TicTacToe - X:${score.tictactoe.X} O:${score.tictactoe.O}<br>
+  Connect4 - Red:${score.connect4.Red} Yellow:${score.connect4.Yellow}<br>
+  Ludo - Red:${score.ludo.Red} Green:${score.ludo.Green}<br>
+  Chess - White:${score.chess.White} Black:${score.chess.Black}`;
 }
-function handleClick(i){
-  if(board[i]!="" || gameOver) return;
-  board[i]=currentPlayer;
-  clickSound.play();
-  checkWinner();
-  currentPlayer = currentPlayer==="X"?"O":"X";
-  if(!gameOver) infoEl.textContent=`Player ${currentPlayer}'s turn`;
-  createBoard();
-}
-function checkWinner(){
-  for(const combo of winningCombos){
-    const [a,b,c]=combo;
-    if(board[a] && board[a]===board[b] && board[a]===board[c]){
-      infoEl.textContent=`Player ${board[a]} Wins!`;
-      gameOver=true;
-      winSound.play();
-      return;
-    }
+
+// Load games
+function loadGame(game){
+  gameContainer.innerHTML='';
+  infoEl.textContent='';
+  switch(game){
+    case 'tictactoe': loadTicTacToe(); break;
+    case 'connect4': loadConnect4(); break;
+    case 'ludo': loadLudo(); break;
+    case 'chess': loadChess(); break;
   }
-  if(!board.includes("")) { infoEl.textContent="It's a Draw!"; gameOver=true; }
 }
 
-document.getElementById('resetBtn').onclick=()=>{
-  board=["","","","","","","","",""];
-  currentPlayer="X";
-  gameOver=false;
+// ----- Tic-Tac-Toe -----
+function loadTicTacToe(){
+  let board=["","","","","","","","",""];
+  let currentPlayer="X";
+  let gameOver=false;
+  const boardEl=document.createElement('div');
+  boardEl.className='board';
+  boardEl.style.gridTemplateColumns='repeat(3,100px)';
+  function createBoard(){
+    boardEl.innerHTML='';
+    board.forEach((cell,i)=>{
+      const div=document.createElement('div');
+      div.className='cell';
+      div.textContent=cell;
+      div.style.width='100px';
+      div.style.height='100px';
+      div.onclick=()=>{
+        if(cell!="" || gameOver) return;
+        board[i]=currentPlayer;
+        checkWinner();
+        currentPlayer=currentPlayer==="X"?"O":"X";
+        if(!gameOver) infoEl.textContent=`Player ${currentPlayer}'s turn`;
+        createBoard();
+      };
+      boardEl.appendChild(div);
+    });
+  }
+  function checkWinner(){
+    const combos=[[0,1,2],[3,4,5],[6,7,8],[0,3,6],[1,4,7],[2,5,8],[0,4,8],[2,4,6]];
+    for(const c of combos){
+      const [a,b,c1]=c;
+      if(board[a] && board[a]===board[b] && board[a]===board[c1]){
+        infoEl.textContent=`Player ${board[a]} Wins!`;
+        gameOver=true;
+        score.tictactoe[board[a]]+=1;
+        updateScoreboard();
+        return;
+      }
+    }
+    if(!board.includes("")){infoEl.textContent="Draw!"; gameOver=true;}
+  }
+  gameContainer.appendChild(boardEl);
   infoEl.textContent=`Player ${currentPlayer}'s turn`;
   createBoard();
 }
 
-createBoard();
-</script>
-</body>
-</html>
+// ----- Connect 4 -----
+function loadConnect4(){
+  const ROWS=6,COLS=7;
+  let board=Array.from({length:ROWS},()=>Array(COLS).fill(""));
+  let currentPlayer="Red"; let gameOver=false;
+  const boardEl=document.createElement('div');
+  boardEl.className='board';
+  boardEl.style.gridTemplateColumns=`repeat(${COLS},60px)`;
+  function createBoard(){
+    boardEl.innerHTML='';
+    for(let r=0;r<ROWS;r++){
+      for(let c=0;c<COLS;c++){
+        const div=document.createElement('div');
+        div.className='cell';
+        div.style.width='60px'; div.style.height='60px';
+        div.style.background=board[r][c]?board[r][c].toLowerCase():getComputedStyle(document.documentElement).getPropertyValue('--card');
+        div.onclick=()=>drop(c);
+        boardEl.appendChild(div);
+      }
+    }
+  }
+  function drop(col){
+    if(gameOver) return;
+    for(let r=ROWS-1;r>=0;r--){
+      if(!board[r][col]){
+        board[r][col]=currentPlayer;
+        checkWinner();
+        currentPlayer=currentPlayer==="Red"?"Yellow":"Red";
+        if(!gameOver) infoEl.textContent=`Player ${currentPlayer}'s turn`;
+        createBoard();
+        return;
+      }
+    }
+  }
+  function checkWinner(){
+    function checkLine(a,b,c,d){return a && a===b && a===c && a===d;}
+    for(let r=0;r<ROWS;r++){for(let c=0;c<COLS-3;c++) if(checkLine(board[r][c],board[r][c+1],board[r][c+2],board[r][c+3])){win(board[r][c]);return;}}
+    for(let c=0;c<COLS;c++){for(let r=0;r<ROWS-3;r++) if(checkLine(board[r][c],board[r+1][c],board[r+2][c],board[r+3][c])){win(board[r][c]);return;}}
+    for(let r=0;r<ROWS-3;r++){for(let c=0;c<COLS-3;c++){
+      if(checkLine(board[r][c],board[r+1][c+1],board[r+2][c+2],board[r+3][c+3])){win(board[r][c]);return;}
+      if(checkLine(board[r+3][c],board[r+2][c+1],board[r+1][c+2],board[r][c+3])){win(board[r+3][c]);return;}
+    }}
+  }
+  function win(player){infoEl.textContent=`Player ${player} Wins!`; gameOver=true; score.connect4[player]+=1; updateScoreboard();}
+  gameContainer.appendChild(boardEl);
+  infoEl.textContent=`Player ${currentPlayer}'s turn`;
+  createBoard();
+}
+
+// ----- Ludo (Simplified 2 Players) -----
+function loadLudo(){
+  let positions={Red:0,Green:0}; let currentPlayer="Red"; let gameOver=false;
+  infoEl.textContent=`${currentPlayer}'s turn. Click Roll Dice.`;
+  const diceBtn=document.createElement('button'); diceBtn.textContent='Roll Dice';
+  const rollResult=document.createElement('div'); rollResult.style.margin='10px 0';
+  const boardEl=document.createElement('div'); boardEl.className='board'; boardEl.style.gridTemplateColumns='repeat(15,20px)'; boardEl.style.marginBottom='10px';
+  function createBoard(){
+    boardEl.innerHTML=''; for(let i=1;i<=15;i++){
+      const div=document.createElement('div'); div.className='cell'; div.style.width='20px'; div.style.height='20px';
+      if(i==positions.Red) div.style.background='red';
+      else if(i==positions.Green) div.style.background='green';
+      boardEl.appendChild(div);
+    }
+  }
+  diceBtn.onclick=()=>{
+    if(gameOver) return;
+    const roll=Math.floor(Math.random()*6)+1;
+    rollResult.textContent=`${currentPlayer} rolled: ${roll}`;
+    positions[currentPlayer]+=roll; if(positions[currentPlayer]>15) positions[currentPlayer]=15;
+    createBoard();
+    if(positions[currentPlayer]===15
