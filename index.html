@@ -346,6 +346,120 @@
       </div>
     </div>
   </section>
+    <style>
+    .give321 {
+      max-width: 900px;
+      margin: 50px auto;
+      background: #1e1e2f;
+      border-radius: 20px;
+      padding: 20px;
+      box-shadow: 0 0 30px rgba(0, 255, 100, 0.3);
+      font-family: Consolas, monospace;
+      color: #fff;
+    }
+
+    .give321 h2 {
+      text-align: center;
+      color: limegreen;
+      margin-bottom: 15px;
+    }
+
+    .give321 select, 
+    .give321 button {
+      padding: 10px 15px;
+      border-radius: 8px;
+      border: none;
+      margin: 5px;
+      cursor: pointer;
+      font-size: 14px;
+    }
+
+    .give321 select {
+      background: #2a2a40;
+      color: #fff;
+    }
+
+    .give321 button {
+      background: limegreen;
+      color: black;
+      font-weight: bold;
+      transition: all 0.3s ease;
+    }
+
+    .give321 button:hover {
+      background: #00cc55;
+      transform: scale(1.05);
+    }
+
+    .give321 textarea {
+      width: 100%;
+      height: 300px;
+      background: #2a2a40;
+      color: #fff;
+      border-radius: 10px;
+      border: none;
+      padding: 15px;
+      font-size: 15px;
+      resize: none;
+      outline: none;
+      margin-bottom: 15px;
+    }
+
+    .give321 pre {
+      background: #111122;
+      color: #00ff88;
+      border-radius: 10px;
+      padding: 15px;
+      min-height: 150px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="give321">
+    <h2>🌟 Cool Code Compiler 🌟</h2>
+    <div style="text-align:center;">
+      <select id="language">
+        <option value="cpp">C++</option>
+        <option value="c">C</option>
+        <option value="python">Python</option>
+        <option value="javascript">JavaScript</option>
+        <option value="html">HTML</option>
+      </select>
+      <button onclick="runCode()">▶ Run</button>
+    </div>
+    
+    <textarea id="code" placeholder="// Write your code here..."></textarea>
+    
+    <h3>Output:</h3>
+    <pre id="output">Your result will appear here...</pre>
+  </div>
+
+  <script>
+    function runCode() {
+      const lang = document.getElementById("language").value;
+      const code = document.getElementById("code").value;
+      const output = document.getElementById("output");
+
+      if (lang === "javascript") {
+        try {
+          output.textContent = eval(code);
+        } catch (err) {
+          output.textContent = "Error: " + err;
+        }
+      } else if (lang === "html") {
+        const newWin = window.open();
+        newWin.document.open();
+        newWin.document.write(code);
+        newWin.document.close();
+      } else {
+        output.textContent = 
+          `⚡ Running ${lang} code requires a backend/compiler.\n` +
+          `👉 You can connect this editor with Judge0 API or similar service.`;
+      }
+    }
+  </script>
 
   <footer class="py-8 text-center text-sm text-slate-600 dark:text-slate-400">
     © <span id="year"></span> Furqan • Built with ❤️ •
@@ -582,6 +696,7 @@
 </style>
 </body>
 </html>
+
 
 
 
